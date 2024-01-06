@@ -4,7 +4,7 @@
       <v-btn class="mx-2 transparent-btn" fab dark small color="primario" @click="ven_clave=true" ><v-icon class="mr-2 mx-2" color="white">fa-lock</v-icon></v-btn>
       <v-btn class="mx-2 transparent-btn" fab dark small color="primario" @click="salir()" ><v-icon class="mr-2 mx-2" color="white">fa-door-open</v-icon></v-btn>
       <v-spacer></v-spacer>
-      <v-btn class="mx-2 transparent-btn" fab dark small color="primario" @click="cambia('opciones')" ><v-icon class="mr-2 mx-2" color="white">list</v-icon></v-btn>
+      <v-btn class="mx-2 transparent-btn" fab dark small color="primario" @click="cambia('opciones')" ><v-icon class="mr-2 mx-2" color="white">fa-grip</v-icon></v-btn>
       <v-spacer></v-spacer>
       <div class="mx-2 white--text body-1 font-weight-bold">{{this.sesion.sistema}} - {{this.sesion.usuario}}</div>
     </v-toolbar>

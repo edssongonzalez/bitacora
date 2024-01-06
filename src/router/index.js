@@ -9,6 +9,9 @@ import Tipo from '@/components/tipo'
 import Relacion from '@/components/relacion'
 import Origen from '@/components/origen'
 import Persona from '@/components/persona'
+import Usuario from '@/components/usuario'
+import Caso from '@/components/caso'
+import Dash from '@/components/dash'
 
 Vue.use(Router)
 
@@ -51,6 +54,18 @@ export default new Router({
         {
           path: 'persona',
           component: Persona,
+        },
+        {
+          path: 'usuario',
+          component: Usuario,
+        },
+        {
+          path: 'caso',
+          component: Caso,
+        },
+        {
+          path: 'dash',
+          component: Dash,
         }
       ]
     }

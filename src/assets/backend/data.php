@@ -282,6 +282,31 @@ if (!empty($_SESSION['idusuario'])) {
     echo json_encode($datos);
   }
 
+  //Peronas
+  if($data['accion']==11){
+
+    $query="SELECT *, CASE WHEN estado IS NULL THEN 'activo' WHEN estado = 0 THEN 'inactivo' END AS estado FROM bitacora.persona";
+    $db->setQuery($query);
+    $resultado = $db->query();
+    //echo $db->getLastErrorMessage();
+    while($res = mysqli_fetch_array($resultado,MYSQLI_ASSOC)){
+
+      $datos[] = [
+        'idpersona'=>$res['idpersona'],
+        'idtipoper'=>$res['idtipoper'],
+        'nombre'=>$res['nombre'],
+        'alias'=>$res['alias'],
+        'celular'=>$res['celular'],
+        'direccion'=>$res['direccion'],
+        'correo'=>$res['correo'],
+        'cui'=>$res['cui'],
+        'estado'=>$res['estado'],
+      ];
+
+    }
+    echo json_encode($datos);
+  }
+
   //combo de areas
   if($data['accion']==12){
 
@@ -298,6 +323,98 @@ if (!empty($_SESSION['idusuario'])) {
 
     }
 
+    echo json_encode($datos);
+  }
+
+  //fotos de la persona
+  if($data['accion']==13){
+
+    $query="SELECT * FROM bitacora.perfoto WHERE estado IS NULL AND idpersona=".$data['idpersona'];
+    $db->setQuery($query);
+    $resultado = $db->query();
+    //echo $db->getLastErrorMessage();
+    while($res = mysqli_fetch_array($resultado,MYSQLI_ASSOC)){
+
+      $datos[] = [
+        'idperfoto'=>$res['idperfoto'],
+        'fecha'=>$res['fecha'],
+        'idusuario'=>$res['idusuario'],
+        'ruta'=>$res['ruta'],
+      ];
+
+    }
+    echo json_encode($datos);
+  }
+
+  //datos del usuario
+  if($data['accion']==14){
+
+    $query="SELECT *, CASE WHEN estado IS NULL THEN 'activo' WHEN estado = 0 THEN 'inactivo' END AS estado FROM bitacora.usuario";
+    $db->setQuery($query);
+    $resultado = $db->query();
+    //echo $db->getLastErrorMessage();
+    while($res = mysqli_fetch_array($resultado,MYSQLI_ASSOC)){
+
+      $query2="SELECT date_format(fecha,'%d-%m-%Y %H:%i:%s') as ingreso FROM bitacora.bitacora WHERE tabla='usuario' AND accion='login' AND idafecto=".$res['idusuario']." ORDER BY idbitacora DESC LIMIT 1";
+      $db->setQuery($query2);
+      $resultado2 = $db->query();
+
+      if($db->getAffectedRows()>=1){
+
+        $res2 = mysqli_fetch_array($resultado2,MYSQLI_ASSOC);
+        $ingreso=$res2['ingreso'];
+      }else{
+        $ingreso="Sin ingresos";
+      }
+
+      $datos[] = [
+        'idusuario'=>$res['idusuario'],
+        'usuario'=>$res['usuario'],
+        'nombre'=>$res['nombre'],
+        'puesto'=>$res['puesto'],
+        'color'=>$res['color'],
+        'estado'=>$res['estado'],
+        'ingreso'=>$ingreso,
+      ];
+
+    }
+    echo json_encode($datos);
+  }
+
+  //combo de opciones disponibles para usuarios
+  if($data['accion']==15){
+
+    $query="SELECT idopcion, nombre FROM bitacora.opcion WHERE estado IS NULL";
+    $db->setQuery($query);
+    $resultado = $db->query();
+    echo $db->getLastErrorMessage();
+    while($res = mysqli_fetch_array($resultado,MYSQLI_ASSOC)){
+
+      $datos[] = [
+        'value'=>$res['idopcion'],
+        'text'=>$res['nombre'],
+      ];
+
+    }
+    echo json_encode($datos);
+  }
+
+  //Opciones que tiene un usuario
+  if($data['accion']==16){
+
+    $query="SELECT a.idusuario, b.idopcion, b.nombre FROM bitacora.permiso a JOIN bitacora.opcion b ON a.idopcion=b.idopcion WHERE a.idusuario=".$data['idusuario'];
+    $db->setQuery($query);
+    $resultado = $db->query();
+    echo $db->getLastErrorMessage();
+    while($res = mysqli_fetch_array($resultado,MYSQLI_ASSOC)){
+
+      $datos[] = [
+        'idopcion'=>$res['idopcion'],
+        'idusuario'=>$res['idusuario'],
+        'nombre'=>$res['nombre'],
+      ];
+
+    }
     echo json_encode($datos);
   }
 

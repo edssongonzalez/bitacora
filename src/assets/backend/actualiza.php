@@ -171,6 +171,89 @@ if (!empty($_SESSION['idusuario'])) {
     }
   }
 
+  //Actualiza datos persona
+  if($data['accion']==7){
+
+    $query="SELECT * FROM bitacora.persona WHERE nombre='".$data['nombre']."' AND alias='".$data['alias']."' AND idpersona!=".$data['idpersona'];
+    //echo $query;
+    $db->setQuery($query);
+    $resultado = $db->query();
+    $db->getLastErrorMessage();
+    if($db->getAffectedRows()>=1){
+      echo 'Ya existe un registro con ese nombre y alias';
+    }else{
+
+      $direccion = isset($data['direccion']) ? "'".$data['direccion']."'" : 'NULL';
+      $correo = isset($data['correo']) ? "'".$data['correo']."'" : 'NULL';
+      $cui = isset($data['cui']) ? "'".$data['cui']."'" : 'NULL';
+
+
+      $query="UPDATE bitacora.persona SET nombre='".$data['nombre']."', alias='".$data['alias']."', celular='".$data['celular']."', idtipoper='".$data['idtipoper']."', direccion=".$direccion.", correo=".$correo.", cui=".$cui."
+      WHERE idpersona=".$data['idpersona'];
+
+      $db->setQuery($query);
+      $resultado = $db->query();
+      $afectadas = $db->getAffectedRows();
+      echo $db->getLastErrorMessage();
+
+      $bit=bitacora($idusuario,'persona',$data['idpersona'],'actualizo',$data['nombre']);
+      echo $afectadas;
+
+    }
+  }
+
+  //Actualiza usuario no clave
+  if($data['accion']==8){
+
+    $query="SELECT * FROM bitacora.usuario WHERE usuario='".$data['usuario']."' AND idusuario!=".$data['idusuario'];
+    //echo $query;
+    $db->setQuery($query);
+    $resultado = $db->query();
+    $db->getLastErrorMessage();
+    if($db->getAffectedRows()>=1){
+      echo 'Ya existe un usuario con ese nombre';
+    }else{
+
+      $query="UPDATE bitacora.usuario SET nombre='".$data['nombre']."', puesto='".$data['puesto']."', usuario='".$data['usuario']."' WHERE idusuario=".$data['idusuario'];
+      $db->setQuery($query);
+      $resultado = $db->query();
+      $afectadas = $db->getAffectedRows();
+      echo $db->getLastErrorMessage();
+
+      $bit=bitacora($idusuario,'usuario',$data['idusuario'],'actualizo',$data['usuario']);
+      echo $afectadas;
+
+    }
+  }
+
+  //cambia clave de usuario
+  if($data['accion']==9){
+
+    $query="UPDATE bitacora.usuario SET clave=md5('".$data['clave']."')  WHERE idusuario=".$data['idusuario'];
+    $db->setQuery($query);
+    $resultado = $db->query();
+    $afectadas = $db->getAffectedRows();
+    echo $db->getLastErrorMessage();
+
+    $bit=bitacora($idusuario,'usuario',$data['idusuario'],'actualizo','Cambio de contraseña');
+    echo $afectadas;
+  }
+
+  //Ingresa opcion a usuario
+  if($data['accion']==10){
+
+    $query="DELETE FROM bitacora.permiso WHERE idusuario='".$data['idusuario']."' AND idopcion='".$data['idopcion']."'";
+
+    $db->setQuery($query);
+    $resultado = $db->query();
+    $afectadas = $db->getAffectedRows();
+    $lastid = $db->getLastId();
+    echo $db->getLastErrorMessage();
+
+    $bit=bitacora($idusuario,'permiso',$data['idusuario'],'elimino',$data['idopcion']);
+    echo $afectadas;
+  }
+
 
 }else{
   echo 'Sesión caducada';

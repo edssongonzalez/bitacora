@@ -18,20 +18,19 @@ $datos=[];
 require ("conector.php");
 $db = new dbhelper($db_name,$db_host,$db_user,$db_pass);
 
-function generateRandomString($length = 5) {
-  return substr(str_shuffle("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"), 0, $length);
-}
 
-$anio=date('Y');
-session_name('muni1');
+
+session_name('bicmo');
 session_start();
 if (!empty($_SESSION['idusuario'])) {
 
   require ("fun.php");
-  $idremision=$_POST['idremision'];
+  $anio=date('Y');
   $idusuario=$_SESSION['idusuario'];
 
   if($_POST['accion']==1){
+
+    $idpersona=$_POST['idpersona'];
 
     if((!empty($_FILES["file"])) && ($_FILES['file']['error'][0] == 0)) {
 
@@ -45,31 +44,22 @@ if (!empty($_SESSION['idusuario'])) {
 
           $peso=$_FILES["file"]["size"][0];
           $random=generateRandomString();
-          $filename=$idremision.'_'.$random.".".$ext;
-          $newname = dirname(__FILE__).'/fotomulta/'.$filename;
+          $filename=$idpersona.'_'.$random.".".$ext;
+          $newname = dirname(__FILE__).'/foto/'.$filename;
           $ruta=$filename;
 
           try {
             move_uploaded_file($_FILES['file']['tmp_name'][0],$newname);
-            $query = "INSERT INTO pmt1.documento VALUES (null,'1', '".$idremision."', 'Fotomulta', '".$filename."', NULL)";
+            $query = "INSERT INTO bitacora.perfoto VALUES (NULL,'".$idpersona."', '".$filename."', now(), ".$idusuario.", NULL)";
             $db->setQuery($query);
             $resultado = $db->query();
+            echo $db->getLastErrorMessage();
             $afectadas = $db->getAffectedRows();
             $lastid = $db->getLastId();
 
-            if($db->getAffectedRows()==1){
-
-              $query="UPDATE pmt1.documento SET estado=0 WHERE idtipodocumento=1 AND estado IS NULL AND idremision=".$idremision." AND iddocumento!=".$lastid;
-              //echo $query;
-              $db->setQuery($query);
-              $resultado = $db->query();
-              echo $db->getLastErrorMessage();
-
-            }
-
             echo $afectadas;
 
-            $bit=bitacora($idusuario,'documento',$lastid,'ingreso',$filename);
+            $bit=bitacora($idusuario,'perfoto',$lastid,'ingreso',$filename);
 
           } catch (Exception $e) {
             echo 'Caught exception: ',  $e->getMessage(), "\n";

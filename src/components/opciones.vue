@@ -2,10 +2,10 @@
   <div>
     <v-row align="center" justify="center">
       <v-col cols="12" xs="12" sm="12" md="12" lg="12" xl="12" class="my-3 pa-2 txtsec title text-center">
-        Opciones Asignadas
+        <v-icon left color="blue darken-2">fa-id-card</v-icon>Opciones Asignadas a su Perfil
       </v-col>
-      <v-col v-for="n in registros" :key="n.idopcion" cols="12" xs="5" sm="4" md="3" lg="2" xl="2" class="elevation-6 pa-0 ma-8">
-        <v-card class="blue-grey lighten-5">
+      <v-col v-for="n in registros" :key="n.idopcion" cols="12" xs="5" sm="4" md="3" lg="2" xl="2" class="elevation-6 pa-0 ma-3">
+        <v-card class="mx-auto"rounded>
           <v-card-title>
             <v-spacer></v-spacer>
             <span class="body-1 txtsec font-weight-bold">{{n.nombre}}</span>
