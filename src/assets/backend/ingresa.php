@@ -219,6 +219,20 @@ if (!empty($_SESSION['idusuario'])) {
     echo $afectadas;
   }
 
+  //Ingresa opcion a usuario
+  if($data['accion']==9){
+
+    $query="INSERT INTO bitacora.caso VALUES (NULL,'".$data['idtipo']."','".$data['idorigen']."','".$data['idseveridad']."','".$data['idubicacion']."','".$data['idarea']."', now(), null, '".$data['descripcion']."',null,".$idusuario.")";
+    $db->setQuery($query);
+    $resultado = $db->query();
+    $afectadas = $db->getAffectedRows();
+    $lastid = $db->getLastId();
+    echo $db->getLastErrorMessage();
+
+    $bit=bitacora($idusuario,'caso',$lastid,'ingreso',$data['descripcion']);
+    echo $afectadas;
+  }
+
 }else{
   echo 'Sesión caducada';
 }

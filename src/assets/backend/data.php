@@ -418,6 +418,82 @@ if (!empty($_SESSION['idusuario'])) {
     echo json_encode($datos);
   }
 
+  //casos abiertos
+  if($data['accion']==17){
+
+    $query="SELECT a.*, b.tipo, c.origen, d.severidad, d.color as sevcolor, e.area, f.ubicacion, f.latitud, f.longitud, g.usuario,
+TIMESTAMPDIFF(DAY, NOW(), inicio) AS dias,
+TIMESTAMPDIFF(HOUR, NOW(), inicio) AS horas,
+date_format(inicio,'%d-%m-%Y %H:%i:%s') as iniciof,
+CASE WHEN fin IS NULL THEN 'En proceso' WHEN fin IS NOT NULL THEN date_format(fin,'%d-%m-%Y %H:%i:%s') END AS finf
+FROM bitacora.caso a
+JOIN bitacora.tipo b ON a.idtipo=b.idtipo
+JOIN bitacora.origen c ON a.idorigen=c.idorigen
+JOIN bitacora.severidad d ON a.idseveridad=d.idseveridad
+JOIN bitacora.area e ON a.idarea=e.idarea
+JOIN bitacora.ubicacion f ON a.idubicacion=f.idubicacion
+JOIN bitacora.usuario g ON a.responsable=g.idusuario
+WHERE a.fin IS NULL";
+    $db->setQuery($query);
+    $resultado = $db->query();
+    echo $db->getLastErrorMessage();
+    while($res = mysqli_fetch_array($resultado,MYSQLI_ASSOC)){
+
+      $url_maps = "https://www.google.com/maps?q=".$res['latitud'].",".$res['longitud'];
+
+      $datos[] = [
+        'idcaso'=>$res['idcaso'],
+        'idtipo'=>$res['idtipo'],
+        'idorigen'=>$res['idorigen'],
+        'idseveridad'=>$res['idseveridad'],
+        'idubicacion'=>$res['idubicacion'],
+        'idarea'=>$res['idarea'],
+        'inicio'=>$res['iniciof'],
+        'fin'=>$res['finf'],
+        'descripcion'=>$res['descripcion'],
+        'cierre'=>$res['cierre'],
+        'responsable'=>$res['responsable'],
+        'tipo'=>$res['tipo'],
+        'origen'=>$res['origen'],
+        'severidad'=>$res['severidad'],
+        'sevcolor'=>$res['sevcolor'],
+        'ubicacion'=>$res['ubicacion'],
+        'area'=>$res['area'],
+        'mapa'=>$url_maps,
+        'usuario'=>$res['usuario'],
+        'dias'=>$res['dias'],
+        'horas'=>$res['horas'],
+      ];
+
+    }
+    echo json_encode($datos);
+  }
+
+  //combos generales
+  if($data['accion']==18){
+
+    $tabla=$data['tabla'];
+    $id=$data['id'];
+    $campo=$data['campo'];
+    $and = isset($data['and']) ? $data['and'] : '';
+
+    $query="SELECT ".$id.", ".$campo." FROM bitacora.".$tabla." WHERE estado IS NULL".$and;
+    //echo $query;
+    $db->setQuery($query);
+    $resultado = $db->query();
+    echo $db->getLastErrorMessage();
+    while($res = mysqli_fetch_array($resultado,MYSQLI_ASSOC)){
+
+      $datos[] = [
+        'value'=>$res[$id],
+        'text'=>$res[$campo],
+      ];
+
+    }
+
+    echo json_encode($datos);
+  }
+
 
 }else{
   echo 'Sesión caducada';
