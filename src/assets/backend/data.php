@@ -3,7 +3,7 @@ $request_headers=apache_request_headers();
 $http_origin=$request_headers['Origin'];
 $allowed_http_origins=array(
   "http://localhost:8080",
-  //"https://pmt.munisumpango.gob.gt"
+  "https://bit.muniantigua.gob.gt/"
 );
 if (in_array($http_origin, $allowed_http_origins)){
   @header("Access-Control-Allow-Origin: " . $http_origin);
@@ -329,7 +329,7 @@ if (!empty($_SESSION['idusuario'])) {
   //fotos de la persona
   if($data['accion']==13){
 
-    $query="SELECT * FROM bitacora.perfoto WHERE estado IS NULL AND idpersona=".$data['idpersona'];
+    $query="SELECT *, date_format(fecha,'%d-%m-%Y %H:%i:%s') as fecha FROM bitacora.perfoto WHERE estado IS NULL AND idpersona=".$data['idpersona'];
     $db->setQuery($query);
     $resultado = $db->query();
     //echo $db->getLastErrorMessage();
@@ -421,9 +421,9 @@ if (!empty($_SESSION['idusuario'])) {
   //casos abiertos
   if($data['accion']==17){
 
-    $query="SELECT a.*, b.tipo, c.origen, d.severidad, d.color as sevcolor, e.area, f.ubicacion, f.latitud, f.longitud, g.usuario,
-TIMESTAMPDIFF(DAY, NOW(), inicio) AS dias,
-TIMESTAMPDIFF(HOUR, NOW(), inicio) AS horas,
+    $query="SELECT a.*, b.tipo, c.origen, d.severidad, d.color as sevcolor, e.area, f.ubicacion, f.latitud, f.longitud, g.usuario, g.nombre,
+TIMESTAMPDIFF(DAY, inicio, NOW()) AS dias,
+TIMESTAMPDIFF(HOUR, inicio, NOW()) AS horas,
 date_format(inicio,'%d-%m-%Y %H:%i:%s') as iniciof,
 CASE WHEN fin IS NULL THEN 'En proceso' WHEN fin IS NOT NULL THEN date_format(fin,'%d-%m-%Y %H:%i:%s') END AS finf
 FROM bitacora.caso a
@@ -461,8 +461,10 @@ WHERE a.fin IS NULL";
         'area'=>$res['area'],
         'mapa'=>$url_maps,
         'usuario'=>$res['usuario'],
+        'nombre'=>$res['nombre'],
         'dias'=>$res['dias'],
         'horas'=>$res['horas'],
+        'editar'=>1,
       ];
 
     }
@@ -491,6 +493,176 @@ WHERE a.fin IS NULL";
 
     }
 
+    echo json_encode($datos);
+  }
+
+  //historial de un caso
+  if($data['accion']==19){
+
+    $query="SELECT a.idhistorial, a.idcaso, date_format(fecha,'%d-%m-%Y %H:%i:%s') as fecha, comentario, b.estado, nombre FROM bitacora.historial a
+JOIN bitacora.estado b ON a.idestado=b.idestado
+JOIN bitacora.usuario c ON a.idusuario=c.idusuario
+WHERE a.idcaso=".$data['idcaso'];
+    $db->setQuery($query);
+    $resultado = $db->query();
+    echo $db->getLastErrorMessage();
+    while($res = mysqli_fetch_array($resultado,MYSQLI_ASSOC)){
+
+      $datos[] = [
+        'idhistorial'=>$res['idhistorial'],
+        'idcaso'=>$res['idcaso'],
+        'fecha'=>$res['fecha'],
+        'comentario'=>$res['comentario'],
+        'estado'=>$res['estado'],
+        'nombre'=>$res['nombre'],
+      ];
+
+    }
+    echo json_encode($datos);
+  }
+
+  //fotos del caso
+  if($data['accion']==20){
+
+    $query="SELECT idadjunto, date_format(fecha,'%d-%m-%Y %H:%i:%s') as fecha, idusuario, ruta FROM bitacora.adjunto WHERE idcaso=".$data['idcaso'];
+    $db->setQuery($query);
+    $resultado = $db->query();
+    //echo $db->getLastErrorMessage();
+    while($res = mysqli_fetch_array($resultado,MYSQLI_ASSOC)){
+
+      $datos[] = [
+        'idadjunto'=>$res['idadjunto'],
+        'fecha'=>$res['fecha'],
+        'idusuario'=>$res['idusuario'],
+        'ruta'=>$res['ruta'],
+      ];
+
+    }
+    echo json_encode($datos);
+  }
+
+  //combo usuarios para responsable
+  if($data['accion']==21){
+
+    $query="SELECT idusuario, nombre FROM bitacora.usuario WHERE estado IS NULL";
+    $db->setQuery($query);
+    $resultado = $db->query();
+    //echo $db->getLastErrorMessage();
+    while($res = mysqli_fetch_array($resultado,MYSQLI_ASSOC)){
+
+      $datos[] = [
+        'value'=>$res['idusuario'],
+        'text'=>$res['nombre'],
+      ];
+
+    }
+
+    echo json_encode($datos);
+  }
+
+  //casos finalizados
+  if($data['accion']==22){
+
+    $query="SELECT a.*, b.tipo, c.origen, d.severidad, d.color as sevcolor, e.area, f.ubicacion, f.latitud, f.longitud, g.usuario, g.nombre,
+TIMESTAMPDIFF(DAY, inicio, NOW()) AS dias,
+TIMESTAMPDIFF(HOUR, inicio, NOW()) AS horas,
+date_format(inicio,'%d-%m-%Y %H:%i:%s') as iniciof,
+CASE WHEN fin IS NULL THEN 'En proceso' WHEN fin IS NOT NULL THEN date_format(fin,'%d-%m-%Y %H:%i:%s') END AS finf
+FROM bitacora.caso a
+JOIN bitacora.tipo b ON a.idtipo=b.idtipo
+JOIN bitacora.origen c ON a.idorigen=c.idorigen
+JOIN bitacora.severidad d ON a.idseveridad=d.idseveridad
+JOIN bitacora.area e ON a.idarea=e.idarea
+JOIN bitacora.ubicacion f ON a.idubicacion=f.idubicacion
+JOIN bitacora.usuario g ON a.responsable=g.idusuario
+WHERE a.fin IS NOT NULL";
+    $db->setQuery($query);
+    $resultado = $db->query();
+    echo $db->getLastErrorMessage();
+    while($res = mysqli_fetch_array($resultado,MYSQLI_ASSOC)){
+
+      $url_maps = "https://www.google.com/maps?q=".$res['latitud'].",".$res['longitud'];
+
+      $datos[] = [
+        'idcaso'=>$res['idcaso'],
+        'idtipo'=>$res['idtipo'],
+        'idorigen'=>$res['idorigen'],
+        'idseveridad'=>$res['idseveridad'],
+        'idubicacion'=>$res['idubicacion'],
+        'idarea'=>$res['idarea'],
+        'inicio'=>$res['iniciof'],
+        'fin'=>$res['finf'],
+        'descripcion'=>$res['descripcion'],
+        'cierre'=>$res['cierre'],
+        'responsable'=>$res['responsable'],
+        'tipo'=>$res['tipo'],
+        'origen'=>$res['origen'],
+        'severidad'=>$res['severidad'],
+        'sevcolor'=>$res['sevcolor'],
+        'ubicacion'=>$res['ubicacion'],
+        'area'=>$res['area'],
+        'mapa'=>$url_maps,
+        'usuario'=>$res['usuario'],
+        'nombre'=>$res['nombre'],
+        'dias'=>$res['dias'],
+        'horas'=>$res['horas'],
+        'editar'=>0,
+      ];
+
+    }
+    echo json_encode($datos);
+  }
+
+  //casos pendientes por usuario logeado
+  if($data['accion']==23){
+
+    $query="SELECT a.*, b.tipo, c.origen, d.severidad, d.color as sevcolor, e.area, f.ubicacion, f.latitud, f.longitud, g.usuario, g.nombre,
+TIMESTAMPDIFF(DAY, inicio, NOW()) AS dias,
+TIMESTAMPDIFF(HOUR, inicio, NOW()) AS horas,
+date_format(inicio,'%d-%m-%Y %H:%i:%s') as iniciof,
+CASE WHEN fin IS NULL THEN 'En proceso' WHEN fin IS NOT NULL THEN date_format(fin,'%d-%m-%Y %H:%i:%s') END AS finf
+FROM bitacora.caso a
+JOIN bitacora.tipo b ON a.idtipo=b.idtipo
+JOIN bitacora.origen c ON a.idorigen=c.idorigen
+JOIN bitacora.severidad d ON a.idseveridad=d.idseveridad
+JOIN bitacora.area e ON a.idarea=e.idarea
+JOIN bitacora.ubicacion f ON a.idubicacion=f.idubicacion
+JOIN bitacora.usuario g ON a.responsable=g.idusuario
+WHERE a.fin IS NULL AND a.responsable=".$idusuario;
+    $db->setQuery($query);
+    $resultado = $db->query();
+    echo $db->getLastErrorMessage();
+    while($res = mysqli_fetch_array($resultado,MYSQLI_ASSOC)){
+
+      $url_maps = "https://www.google.com/maps?q=".$res['latitud'].",".$res['longitud'];
+
+      $datos[] = [
+        'idcaso'=>$res['idcaso'],
+        'idtipo'=>$res['idtipo'],
+        'idorigen'=>$res['idorigen'],
+        'idseveridad'=>$res['idseveridad'],
+        'idubicacion'=>$res['idubicacion'],
+        'idarea'=>$res['idarea'],
+        'inicio'=>$res['iniciof'],
+        'fin'=>$res['finf'],
+        'descripcion'=>$res['descripcion'],
+        'cierre'=>$res['cierre'],
+        'responsable'=>$res['responsable'],
+        'tipo'=>$res['tipo'],
+        'origen'=>$res['origen'],
+        'severidad'=>$res['severidad'],
+        'sevcolor'=>$res['sevcolor'],
+        'ubicacion'=>$res['ubicacion'],
+        'area'=>$res['area'],
+        'mapa'=>$url_maps,
+        'usuario'=>$res['usuario'],
+        'nombre'=>$res['nombre'],
+        'dias'=>$res['dias'],
+        'horas'=>$res['horas'],
+        'editar'=>1,
+      ];
+
+    }
     echo json_encode($datos);
   }
 

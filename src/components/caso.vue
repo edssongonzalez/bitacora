@@ -11,12 +11,12 @@
             <span class="txtprimario">Nuevo Caso</span>
             <v-icon color="blue darken-3">fa-circle-plus</v-icon>
           </v-btn>
-          <v-btn>
+          <v-btn @click="lstfinalizados()">
             <span class="txtprimario">Historia</span>
             <v-icon color="blue darken-3">fa-history</v-icon>
           </v-btn>
-          <v-btn>
-            <span class="txtprimario">Mis Casos</span>
+          <v-btn @click="lstpendientes()">
+            <span class="txtprimario">Mis Pendientes</span>
             <v-icon color="blue darken-3">fa-circle-user</v-icon>
           </v-btn>
         </v-bottom-navigation>
@@ -27,8 +27,7 @@
             <span class="subtitle-1">Registros encontrados</span>
           </v-toolbar-title>
           <v-spacer></v-spacer>
-          <v-text-field v-model="search" append-icon="search" label="Filtro" single-line hide-details @keyup.esc="dialog = false" ></v-text-field>
-          <v-icon class="mr-2" >refresh</v-icon>
+          <v-text-field v-model="search" append-icon="search" label="Buscar por coincidencia" single-line hide-details @keyup.esc="dialog = false" ></v-text-field>
         </v-toolbar>
         <template>
           <v-data-table
@@ -53,13 +52,14 @@
               <span class="body-2 blue--text">{{item.ubicacion}}, {{item.area}}</span> <v-icon class="mr-2" color="blue" @click="ver_mapa(item.mapa)">fa-location-dot</v-icon>
             </template>
             <template v-slot:item.tiempo="{ item }">
-              <span class="body-2 red--text">{{item.dias}}d - {{item.horas}}h</span>
+              <span class="body-2 red--text">{{item.dias}}d ({{item.horas}}h)</span>
             </template>
             <template v-slot:item.actions="{ item }">
-              <v-icon class="mr-2" @click="ver_editar(item)" color="orange darken-3">fa-paperclip</v-icon>
-              <v-icon class="mr-2" @click="ver_editar(item)" color="orange darken-3">fa-people-arrows</v-icon>
-              <v-icon class="mr-2" @click="ver_editar(item)" color="orange darken-3">edit</v-icon>
-              <v-icon class="mr-2" @click="estado(item.idarea,item.estado)" color="orange darken-3">fa-shuffle</v-icon>
+              <v-btn icon outlined class="orange darken-3" @click="ver_editar(item)" :disabled="item.editar==0"><v-icon color="white">edit</v-icon></v-btn>
+              <v-btn icon outlined class="orange darken-3" @click="ver_tiempo(item)"><v-icon color="white">fa-timeline</v-icon></v-btn>
+              <v-btn icon outlined class="orange darken-3" @click="ver_foto(item)"><v-icon color="white">fa-camera</v-icon></v-btn>
+              <v-btn icon outlined class="orange darken-3" @click="ver_asigna(item)" :disabled="item.editar==0"><v-icon color="white">fa-shuffle</v-icon></v-btn>
+              <v-btn icon outlined class="red darken-3" @click="ver_fin(item)" :disabled="item.editar==0"><v-icon color="white">fa-stopwatch</v-icon></v-btn>
             </template>
             <v-alert slot="no-results" :value="true" color="secundario" icon="warning">
               <span class="body-2 white--text">Su busqueda de "{{ search }}" no dio resultados.</span>
@@ -107,13 +107,133 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+    <v-dialog v-model="ven_editar" persistent max-width="800px">
+      <v-card>
+        <v-card-title>
+          <span class="headline">Editar el Caso # {{this.registro.idcaso}}</span>
+          <v-spacer></v-spacer>
+          <v-btn icon color="blue darken-1" text @click="ven_editar = false"><v-icon>close</v-icon></v-btn>
+        </v-card-title>
+        <v-card-text>
+          <v-container>
+            <v-form v-model="valid" ref="form2" lazy-validation @keyup.native.enter="ingresar()">
+              <v-row align="center" justify="center">
+                <v-col cols="12" class="pa-0">
+                  <v-autocomplete dense outlined append-icon="fa-list" :items="origen" v-model="registro.idorigen" label="Origen del caso" :rules="selRules"></v-autocomplete>
+                </v-col>
+                <v-col cols="12" class="pa-0">
+                  <v-autocomplete dense outlined append-icon="fa-list" :items="area" v-model="idarea2" label="Area del incidente" :rules="selRules"></v-autocomplete>
+                </v-col>
+                <v-col cols="12" class="pa-0">
+                  <v-autocomplete dense outlined append-icon="fa-list" :items="ubicacion" v-model="registro.idubicacion" label="Ubicacion del incidente" :rules="selRules"></v-autocomplete>
+                </v-col>
+                <v-col cols="12" class="pa-0">
+                  <v-autocomplete dense outlined append-icon="fa-list" :items="tipo" v-model="registro.idtipo" label="Clasificacion del caso" :rules="selRules"></v-autocomplete>
+                </v-col>
+                <v-col cols="12" class="pa-0">
+                  <v-autocomplete dense outlined append-icon="fa-list" :items="severidad" v-model="registro.idseveridad" label="Severidad del caso" :rules="selRules"></v-autocomplete>
+                </v-col>
+                <v-col cols="12" class="pa-0">
+                  <v-textarea dense outlined v-model="registro.descripcion" label="Descripcion del incidente o caso ingresado" type="text" :rules="minRules" required>></v-textarea>
+                </v-col>
+              </v-row>
+            </v-form>
+          </v-container>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn outlined color="blue darken-1" text @click="editar()">editar</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+    <v-dialog v-model="ven_tiempo" persistent max-width="600px">
+      <v-card>
+        <v-card-title>
+          <span class="headline">Linea de tiempo Caso # {{this.registro.idcaso}}</span>
+          <v-spacer></v-spacer>
+          <v-btn icon color="blue darken-1" text @click="ven_tiempo = false"><v-icon>close</v-icon></v-btn>
+        </v-card-title>
+        <v-card-text>
+          <v-container>
+            <v-row align="center" justify="center" class="pa-2">
+              <v-col v-for="n in tiempos" :key="n.idbitacora" cols="12" xs="12" sm="12" md="12" lg="12" xl="12"  class="text-left mt-3">
+                <v-icon color="blue">fa-square-check</v-icon>
+                <span class="body-1 txtprimario">{{n.estado}}<br></span>
+                <span class="body-1 txtsec">{{n.fecha}} por {{n.nombre}}<br></span>
+                <span class="body-1 txtsec">{{n.comentario}}</span>
+              </v-col>
+            </v-row>
+          </v-container>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
+    <v-dialog v-model="ven_foto" persistent max-width="800px">
+      <template v-if="this.ven_foto==true">
+        <Fotocaso @ventana="ven_foto=false" :id="this.id"></Fotocaso>
+      </template>
+    </v-dialog>
+    <v-dialog v-model="ven_asigna" persistent max-width="600px">
+      <v-card>
+        <v-card-title>
+          <span class="headline">Reasignar el Caso # {{this.registro.idcaso}}</span>
+          <v-spacer></v-spacer>
+          <v-btn icon color="blue darken-1" text @click="ven_asigna = false"><v-icon>close</v-icon></v-btn>
+        </v-card-title>
+        <v-card-text>
+          <v-container>
+            <v-form v-model="valid" ref="form3" lazy-validation @keyup.native.enter="asignar()">
+              <v-row align="center" justify="center">
+                <v-col cols="12" class="pa-0">
+                  <v-text-field dense outlined v-model="registro.nombre" label="Responsable actual" disabled></v-text-field>
+                </v-col>
+                <v-col cols="12" class="pa-0">
+                  <v-autocomplete dense outlined append-icon="fa-list" :items="responsables" v-model="responsable" label="Nuevo responsable" :rules="selRules"></v-autocomplete>
+                </v-col>
+              </v-row>
+            </v-form>
+          </v-container>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn outlined color="blue darken-1" text @click="asignar()">asignar</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+    <v-dialog v-model="ven_fin" persistent max-width="600px">
+      <v-card>
+        <v-card-title>
+          <span class="headline">Finalizar el Caso # {{this.registro.idcaso}}</span>
+          <v-spacer></v-spacer>
+          <v-btn icon color="blue darken-1" text @click="ven_fin = false"><v-icon>close</v-icon></v-btn>
+        </v-card-title>
+        <v-card-text>
+          <v-container>
+            <v-form v-model="valid" ref="form4" lazy-validation @keyup.native.enter="finalizar()">
+              <v-row align="center" justify="center">
+                <v-col cols="12" class="pa-0">
+                  <v-textarea dense outlined v-model="cierre" label="Cierre del caso" :rules="minRules"></v-textarea>
+                </v-col>
+              </v-row>
+            </v-form>
+          </v-container>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn outlined color="blue darken-1" text @click="finalizar()">Proceder al cierre</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 <script>
 import axios from 'axios';
 import iziToast from 'izitoast';
+import Fotocaso from './fotocaso';
 
 export default {
+  components:{
+    Fotocaso
+  },
   data: () => ({
     parametro: null,
     valid:true,
@@ -149,6 +269,11 @@ export default {
     ],
     ven_ingresar:false,
     ven_editar:false,
+    ven_tiempo:false,
+    ven_foto:false,
+    ven_asigna:false,
+    ven_persona:false,
+    ven_fin:false,
     tipo:[],
     idtipo:null,
     origen:[],
@@ -161,6 +286,11 @@ export default {
     idubicacion:null,
     inicio:null,
     descripcion:null,
+    tiempos:[],
+    idarea2:null,
+    responsables:[],
+    responsable:null,
+    cierre:null,
   }),
   mounted () {
     this.parametro = 'go';
@@ -176,7 +306,11 @@ export default {
     },
     idarea(){
       this.lstubi();
-    }
+    },
+    idarea2(){
+      this.lstubi2();
+    },
+
   },
   methods : {
     permiso(){
@@ -208,6 +342,28 @@ export default {
     lstregistros(){
       axios.post(process.env.RUTA +'/assets/backend/data.php', {
         accion: 17,
+      })
+        .then((response) => {
+          this.registros = response.data;
+        })
+        .catch(err => {
+          console.log(err)
+        })
+    },
+    lstfinalizados(){
+      axios.post(process.env.RUTA +'/assets/backend/data.php', {
+        accion: 22,
+      })
+        .then((response) => {
+          this.registros = response.data;
+        })
+        .catch(err => {
+          console.log(err)
+        })
+    },
+    lstpendientes(){
+      axios.post(process.env.RUTA +'/assets/backend/data.php', {
+        accion: 23,
       })
         .then((response) => {
           this.registros = response.data;
@@ -287,6 +443,21 @@ export default {
           console.log(err)
         })
     },
+    lstubi2(){
+      axios.post(process.env.RUTA +'/assets/backend/data.php', {
+        accion: 18,
+        tabla:'ubicacion',
+        id:'idubicacion',
+        campo:'ubicacion',
+        and:' AND idarea='+this.idarea2,
+      })
+        .then((response) => {
+          this.ubicacion = response.data;
+        })
+        .catch(err => {
+          console.log(err)
+        })
+    },
     ingresar(){
       if (this.$refs.form.validate()) {
         this.$toastr.confirm('Ingreso de un Caso','¿Confirmar?')
@@ -335,22 +506,22 @@ export default {
     },
     ver_editar(id){
       this.registro=id;
-      this.ven_ingresar=false;
       this.ven_editar=true;
-    },
-    cerrar_editar(){
-      this.ven_ingresar=true;
-      this.ven_editar=false;
+      this.idarea2=this.registro.idarea;
     },
     editar(){
       if (this.$refs.form2.validate()) {
         this.$toastr.confirm('Edición de un registro','¿Confirmar?')
           .then(() => {
             axios.post(process.env.RUTA +'/assets/backend/actualiza.php', {
-              accion: 1,
-              color:this.registro.color,
-              area:this.registro.area,
-              idarea:this.registro.idarea,
+              accion: 11,
+              idcaso:this.registro.idcaso,
+              idtipo:this.registro.idtipo,
+              idarea:this.idarea2,
+              idorigen:this.registro.idorigen,
+              idseveridad:this.registro.idserveridad,
+              idubicacion:this.registro.idubicacion,
+              descripcion:this.registro.descripcion
             })
               .then((response)=>{
                 if(response.data=='1'){
@@ -361,8 +532,115 @@ export default {
                     timeout: 2000,
                   });
                   this.ven_editar=false;
-                  this.ven_ingresar=true;
                   this.lstregistros();
+                }
+                else{
+                  iziToast.error({
+                    title: 'Alerta',
+                    message: response.data,
+                    position: 'topRight',
+                    timeout: 2000,
+                  });
+                }
+              })
+              .catch(err => {
+                console.log(err)
+              })
+          })
+      }
+    },
+    ver_tiempo(id){
+      this.registro=id;
+      this.ven_tiempo=true;
+      axios.post(process.env.RUTA +'/assets/backend/data.php', {
+        accion: 19,
+        idcaso:this.registro.idcaso,
+      })
+        .then((response) => {
+          this.tiempos = response.data;
+        })
+        .catch(err => {
+          console.log(err)
+        })
+    },
+    ver_foto(id){
+      this.registro=id;
+      this.id=this.registro.idcaso;
+      this.ven_foto=true;
+    },
+    ver_asigna(id){
+      this.registro=id;
+      this.ven_asigna=true;
+      axios.post(process.env.RUTA +'/assets/backend/data.php', {
+        accion: 21,
+      })
+        .then((response) => {
+          this.responsables = response.data;
+        })
+        .catch(err => {
+          console.log(err)
+        })
+    },
+    asignar(){
+      if (this.$refs.form3.validate()) {
+        this.$toastr.confirm('Reasignar un caso','¿Confirmar?')
+          .then(() => {
+            axios.post(process.env.RUTA +'/assets/backend/actualiza.php', {
+              accion: 12,
+              idcaso:this.registro.idcaso,
+              responsable:this.responsable,
+              nombre:this.registro.nombre,
+            })
+              .then((response)=>{
+                if(response.data=='1'){
+                  iziToast.success({
+                    title: 'Registro:',
+                    message: 'actualizado',
+                    position: 'topRight',
+                    timeout: 2000,
+                  });
+                  this.ven_asigna=false;
+                  this.lstregistros();
+                }
+                else{
+                  iziToast.error({
+                    title: 'Alerta',
+                    message: response.data,
+                    position: 'topRight',
+                    timeout: 2000,
+                  });
+                }
+              })
+              .catch(err => {
+                console.log(err)
+              })
+          })
+      }
+    },
+    ver_fin(id){
+      this.registro=id;
+      this.ven_fin=true;
+    },
+    finalizar(){
+      if (this.$refs.form4.validate()) {
+        this.$toastr.confirm('Finalizar el caso','¿Confirmar?')
+          .then(() => {
+            axios.post(process.env.RUTA +'/assets/backend/actualiza.php', {
+              accion: 13,
+              idcaso:this.registro.idcaso,
+              cierre:this.cierre,
+            })
+              .then((response)=>{
+                if(response.data=='1'){
+                  iziToast.success({
+                    title: 'Caso:',
+                    message: 'finalizado',
+                    position: 'topRight',
+                    timeout: 2000,
+                  });
+                  this.ven_fin=false;
+                  this.lstregistros();
+                  this.cierre=null;
                 }
                 else{
                   iziToast.error({

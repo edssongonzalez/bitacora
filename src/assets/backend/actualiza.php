@@ -3,7 +3,7 @@ $request_headers=apache_request_headers();
 $http_origin=$request_headers['Origin'];
 $allowed_http_origins=array(
   "http://localhost:8080",
-  //"https://pmt.munisumpango.gob.gt"
+  "https://bit.muniantigua.gob.gt/"
 );
 if (in_array($http_origin, $allowed_http_origins)){
   @header("Access-Control-Allow-Origin: " . $http_origin);
@@ -251,6 +251,71 @@ if (!empty($_SESSION['idusuario'])) {
     echo $db->getLastErrorMessage();
 
     $bit=bitacora($idusuario,'permiso',$data['idusuario'],'elimino',$data['idopcion']);
+    echo $afectadas;
+  }
+
+  //edita datos de un caso
+  if($data['accion']==11){
+
+    $query="UPDATE bitacora.caso SET descripcion='".$data['descripcion']."', idarea='".$data['idarea']."', idorigen='".$data['idorigen']."', idtipo='".$data['idtipo']."', idubicacion='".$data['idubicacion']."'  WHERE idcaso=".$data['idcaso'];
+    $db->setQuery($query);
+    $resultado = $db->query();
+    $afectadas = $db->getAffectedRows();
+    echo $db->getLastErrorMessage();
+
+    $bit=bitacora($idusuario,'caso',$data['idcaso'],'actualizo','Edito campos');
+    echo $afectadas;
+  }
+
+  //reasigna un caso
+  if($data['accion']==12){
+
+    $query="UPDATE bitacora.caso SET responsable='".$data['responsable']."'  WHERE idcaso=".$data['idcaso'];
+    $db->setQuery($query);
+    $resultado = $db->query();
+    $afectadas = $db->getAffectedRows();
+    echo $db->getLastErrorMessage();
+
+    if($afectadas>=1){
+
+      $comentario="Reasignacion de caso, se quita a ".$data['nombre'];
+      $query="INSERT INTO bitacora.historial VALUES (NULL,'".$data['idcaso']."','4','".$idusuario."',now(),'".$comentario."')";
+      $db->setQuery($query);
+      $resultado = $db->query();
+      $afectadas = $db->getAffectedRows();
+      echo $db->getLastErrorMessage();
+
+      $bit=bitacora($idusuario,'caso',$data['idcaso'],'actualizo','Cambio responsable');
+
+    }
+
+
+    echo $afectadas;
+  }
+
+  //finaliza un caso
+  if($data['accion']==13){
+
+    $query="UPDATE bitacora.caso SET fin=now(), cierre='".$data['cierre']."'  WHERE idcaso=".$data['idcaso'];
+    $db->setQuery($query);
+    $resultado = $db->query();
+    $afectadas = $db->getAffectedRows();
+    echo $db->getLastErrorMessage();
+
+    if($afectadas>=1){
+
+      $comentario="El caso fue finalizado";
+      $query="INSERT INTO bitacora.historial VALUES (NULL,'".$data['idcaso']."','2','".$idusuario."',now(),'".$comentario."')";
+      $db->setQuery($query);
+      $resultado = $db->query();
+      $afectadas = $db->getAffectedRows();
+      echo $db->getLastErrorMessage();
+
+      $bit=bitacora($idusuario,'caso',$data['idcaso'],'actualizo','cierre');
+
+    }
+
+
     echo $afectadas;
   }
 

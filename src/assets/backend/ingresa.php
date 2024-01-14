@@ -3,7 +3,7 @@ $request_headers=apache_request_headers();
 $http_origin=$request_headers['Origin'];
 $allowed_http_origins=array(
   "http://localhost:8080",
-  //"https://pmt.munisumpango.gob.gt"
+  "https://bit.muniantigua.gob.gt/"
 );
 if (in_array($http_origin, $allowed_http_origins)){
   @header("Access-Control-Allow-Origin: " . $http_origin);
@@ -229,8 +229,18 @@ if (!empty($_SESSION['idusuario'])) {
     $lastid = $db->getLastId();
     echo $db->getLastErrorMessage();
 
-    $bit=bitacora($idusuario,'caso',$lastid,'ingreso',$data['descripcion']);
-    echo $afectadas;
+    if($lastid>=1){
+
+      $query="INSERT INTO bitacora.historial VALUES (NULL,'".$lastid."','1','".$idusuario."',now(),'')";
+      $db->setQuery($query);
+      $resultado = $db->query();
+      $afectadas = $db->getAffectedRows();
+
+      $bit=bitacora($idusuario,'caso',$lastid,'ingreso',$data['descripcion']);
+      echo $afectadas;
+    }
+
+
   }
 
 }else{
